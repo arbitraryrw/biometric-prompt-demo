@@ -21,24 +21,28 @@ class MainActivity : AppCompatActivity() {
     private lateinit var executor:Executor
     private lateinit var biometricPrompt: BiometricPrompt
     private lateinit var promptInfo: BiometricPrompt.PromptInfo
+    private lateinit var biometricManager: BiometricManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        executor = ContextCompat.getMainExecutor(this)
 
         val authResultTextView = findViewById<TextView>(R.id.authResultTextView)
         val mainButton = findViewById<Button>(R.id.mainButton)
 
         authResultTextView.setText("Not Authenticated")
 
-        mainButton.setOnClickListener {
 
-            val biometricManager = BiometricManager.from(this)
+        executor = ContextCompat.getMainExecutor(this)
+
+        setupBiometricPromptAndInfo()
+
+        biometricManager = BiometricManager.from(this)
+
+        mainButton.setOnClickListener {
             when (biometricManager.canAuthenticate()) {
                 BiometricManager.BIOMETRIC_SUCCESS ->
-                    showBiometricPrompt()
+                    biometricPrompt.authenticate(promptInfo)
                 BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE ->
                     println("No biometric features available on this device.")
                 BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE ->
@@ -50,8 +54,7 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    fun showBiometricPrompt() {
-
+    fun setupBiometricPromptAndInfo() {
         // For information on individual prompt options refer to:
         //https://developer.android.com/reference/android/hardware/biometrics/BiometricPrompt.Builder.html#public-methods
         promptInfo = BiometricPrompt.PromptInfo.Builder()
@@ -100,9 +103,6 @@ class MainActivity : AppCompatActivity() {
                     println("Biometric auth failed")
                 }
             })
-
-        // Displays the "log in" prompt.
-        biometricPrompt.authenticate(promptInfo)
     }
 
 
