@@ -6,7 +6,7 @@ The purpose of this project is to showcase some of the basic features availble i
 
 1. Simplify the complexity of integrating biometric authentication  
 2. Superseed exsisting methods of integrating biometric authentication, such as the [FingerprintManager](https://developer.android.com/reference/android/hardware/fingerprint/FingerprintManager) for fingerprint biometrics
-3. Create a single API for developers to interface with any biometric type, whether it is facial recognition or fingerprint. Notably, this will probably be expanded other biometric types in the future such as iris etc.
+3. Create a single API for developers to interface with any biometric type, whether it is facial recognition or fingerprint. Notably, this will probably be expanded to include other biometric types in the future such as iris etc.
 4. Abstract biometric idiosyncrasies from developers
 
 This code is purely for demonstration purposes and is not complete.
