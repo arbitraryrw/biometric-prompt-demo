@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
+import java.nio.charset.Charset
 
 //Crypto APIs
 import java.security.KeyStore
@@ -74,9 +75,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         mainButton.setOnClickListener {
+
+            println("[PRE AUTH] The old key ->" + getSecretKey().encoded)
+
             when (biometricManager.canAuthenticate()) {
                 BiometricManager.BIOMETRIC_SUCCESS ->
-                    successfulAuthenticationLogic()
+                    performBiometricAuthentication()
                 BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE ->
                     println("No biometric features available on this device.")
                 BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE ->
@@ -118,14 +122,13 @@ class MainActivity : AppCompatActivity() {
 
                 override fun onAuthenticationSucceeded(
                     result: BiometricPrompt.AuthenticationResult) {
-                    super.onAuthenticationSucceeded(result)
-                    val authenticatedCryptoObject: BiometricPrompt.CryptoObject? =
-                        result.getCryptoObject()
-                    // User has verified the signature, cipher, or message
-                    // authentication code (MAC) associated with the crypto object,
-                    // so you can use it in your app's crypto-driven workflows.
+                    val encryptedInfo: ByteArray? = result.cryptoObject?.cipher?.doFinal(
+                        "super_sensitive_string".toByteArray(Charset.defaultCharset())
+                    )
 
-                    notiftyAuthSuccess()
+                    println("[POST AUTH] Encrypted info: " + encryptedInfo)
+
+                    notiftyUIAuthSuccess()
                 }
 
                 override fun onAuthenticationFailed() {
@@ -139,16 +142,15 @@ class MainActivity : AppCompatActivity() {
             })
     }
 
-    fun successfulAuthenticationLogic(){
+    fun performBiometricAuthentication(){
         val cipher = getCipher()
         val secretKey = getSecretKey()
         cipher.init(Cipher.ENCRYPT_MODE, secretKey)
         biometricPrompt.authenticate(promptInfo,
             BiometricPrompt.CryptoObject(cipher))
-
     }
 
-    fun notiftyAuthSuccess(){
+    fun notiftyUIAuthSuccess(){
         val authResultTextView = findViewById<TextView>(R.id.authResultTextView)
 
         println("[+] Successful authentication, yahoo!")
