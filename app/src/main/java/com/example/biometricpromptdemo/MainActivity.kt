@@ -76,7 +76,7 @@ class MainActivity : AppCompatActivity() {
         mainButton.setOnClickListener {
             when (biometricManager.canAuthenticate()) {
                 BiometricManager.BIOMETRIC_SUCCESS ->
-                    biometricPrompt.authenticate(promptInfo)
+                    successfulAuthenticationLogic()
                 BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE ->
                     println("No biometric features available on this device.")
                 BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE ->
@@ -139,6 +139,14 @@ class MainActivity : AppCompatActivity() {
             })
     }
 
+    fun successfulAuthenticationLogic(){
+        val cipher = getCipher()
+        val secretKey = getSecretKey()
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+        biometricPrompt.authenticate(promptInfo,
+            BiometricPrompt.CryptoObject(cipher))
+
+    }
 
     fun notiftyAuthSuccess(){
         val authResultTextView = findViewById<TextView>(R.id.authResultTextView)
