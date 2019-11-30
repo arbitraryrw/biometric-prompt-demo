@@ -2,27 +2,31 @@ package com.example.biometricpromptdemo
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
-import androidx.biometric.BiometricConstants
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
 import java.util.concurrent.Executor
 
 //Ref: https://developer.android.com/training/sign-in/biometric-auth#kotlin
 
 class MainActivity : AppCompatActivity() {
 
-    var counter = 0
+    object irrelevantVars{
+        var counter = 0
+    }
 
-    private val executor = MainThreadExecutor()
+    private lateinit var executor:Executor
+    private lateinit var biometricPrompt: BiometricPrompt
+    private lateinit var promptInfo: BiometricPrompt.PromptInfo
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        executor = ContextCompat.getMainExecutor(this)
 
         val authResultTextView = findViewById<TextView>(R.id.authResultTextView)
         val mainButton = findViewById<Button>(R.id.mainButton)
@@ -50,16 +54,16 @@ class MainActivity : AppCompatActivity() {
 
         // For information on individual prompt options refer to:
         //https://developer.android.com/reference/android/hardware/biometrics/BiometricPrompt.Builder.html#public-methods
-        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+        promptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle("Biometric Example")
             .setDescription("Biometric login for my app")
             .setSubtitle("Log in using your biometric credential")
             .setNegativeButtonText("Abort biometric login")
             .setConfirmationRequired(true)
-            .setDeviceCredentialAllowed(true)
+            .setDeviceCredentialAllowed(false)
             .build()
 
-        val biometricPrompt = BiometricPrompt(this, executor,
+        biometricPrompt = BiometricPrompt(this, executor,
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationError(errorCode: Int,
                                                    errString: CharSequence) {
@@ -107,15 +111,10 @@ class MainActivity : AppCompatActivity() {
 
         println("[+] Successful authentication, yahoo!")
 
-        authResultTextView.setText(""+"Successfully Authenticated")
+        irrelevantVars.counter++
+
+        authResultTextView.setText("Successfully Authenticated:" + irrelevantVars.counter)
     }
 
-    inner class MainThreadExecutor : Executor {
-        private val handler = Handler(Looper.getMainLooper())
-
-        override fun execute(runnable: Runnable) {
-            handler.post(runnable)
-        }
-    }
 
 }
