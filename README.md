@@ -18,3 +18,5 @@ This code is purely for demonstration purposes and is not complete.
 - [BiometricManager](https://developer.android.com/reference/androidx/biometric/BiometricManager)
 - [BiometricPrompt](https://developer.android.com/reference/android/hardware/biometrics/BiometricPrompt)
 - [Android Biometric Guide](https://developer.android.com/training/sign-in/biometric-auth)
+- [Android Cipher](https://developer.android.com/reference/kotlin/javax/crypto/Cipher.html)
+- [Android Keystore Builder](https://developer.android.com/reference/android/security/keystore/KeyGenParameterSpec.Builder)
