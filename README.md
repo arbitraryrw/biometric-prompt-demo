@@ -20,3 +20,4 @@ This code is purely for demonstration purposes and is not complete.
 - [Android Biometric Guide](https://developer.android.com/training/sign-in/biometric-auth)
 - [Android Cipher](https://developer.android.com/reference/kotlin/javax/crypto/Cipher.html)
 - [Android Keystore Builder](https://developer.android.com/reference/android/security/keystore/KeyGenParameterSpec.Builder)
+- [IV Gen Blog Post](https://proandroiddev.com/secure-data-in-android-initialization-vector-6ca1c659762c)
