@@ -2,7 +2,6 @@ package com.example.biometricpromptdemo
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.provider.Settings
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.widget.Button
@@ -15,12 +14,10 @@ import java.nio.charset.Charset
 
 //Crypto APIs
 import java.security.KeyStore
-import java.security.SecureRandom
 import java.util.concurrent.Executor
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
-import javax.crypto.spec.IvParameterSpec
 
 //Ref: https://developer.android.com/training/sign-in/biometric-auth#kotlin
 
@@ -63,7 +60,7 @@ class MainActivity : AppCompatActivity() {
                 KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
                 .setBlockModes(KeyProperties.BLOCK_MODE_CBC)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_PKCS7)
-                .setUserAuthenticationRequired(false)
+                .setUserAuthenticationRequired(true)
                 // Invalidate the keys if the user has registered a new biometric
                 // credential, such as a new fingerprint. Can call this method only
                 // on Android 7.0 (API level 24) or higher. The variable
