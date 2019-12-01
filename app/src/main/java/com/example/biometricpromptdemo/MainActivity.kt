@@ -238,7 +238,8 @@ class MainActivity : AppCompatActivity() {
         val decryptionCipher = getCipher()
         val decryptionSecretKey = getSecretKey()
 
-        decryptionCipher.init(Cipher.DECRYPT_MODE, decryptionSecretKey, IvParameterSpec(iv))
+        if (::iv.isInitialized) {
+            decryptionCipher.init(Cipher.DECRYPT_MODE, decryptionSecretKey, IvParameterSpec(iv))
 
 //        Testing purposes, checking if this will trigger an error when accessing key without
 //              the user authenticating. Correctly throws the following exception:
@@ -246,8 +247,17 @@ class MainActivity : AppCompatActivity() {
 //        val decryptedData:ByteArray = decryptionCipher.doFinal(encryptedSuperSecretValue)
 //        println("[PRE AUTH] Decrypted Data: " + decryptedData.toString(Charset.defaultCharset()))
 
-        decryptBiometricPrompt.authenticate(decryptBiometricPromptInfo,
-            BiometricPrompt.CryptoObject(decryptionCipher))
+            decryptBiometricPrompt.authenticate(
+                decryptBiometricPromptInfo,
+                BiometricPrompt.CryptoObject(decryptionCipher)
+            )
+        }
+        else{
+            Toast.makeText(applicationContext, "Encrypt something first..",
+                Toast.LENGTH_SHORT)
+                .show()
+        }
+
     }
 
     private fun generateSecretKey(keyGenParameterSpec: KeyGenParameterSpec) {
