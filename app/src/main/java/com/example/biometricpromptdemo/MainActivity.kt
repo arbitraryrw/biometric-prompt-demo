@@ -21,6 +21,7 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.IvParameterSpec
 
+//Many of the code snippets are inspired from here:
 //Ref: https://developer.android.com/training/sign-in/biometric-auth#kotlin
 
 class MainActivity : AppCompatActivity() {
@@ -30,7 +31,7 @@ class MainActivity : AppCompatActivity() {
         var flag = 0
     }
 
-    val KEY_NAME = "dummy"
+    val KEY_NAME = "insert_obfuscated_keyname"
 
     private lateinit var executor:Executor
     private lateinit var biometricPrompt: BiometricPrompt
