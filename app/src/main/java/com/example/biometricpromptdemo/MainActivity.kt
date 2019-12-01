@@ -60,12 +60,12 @@ class MainActivity : AppCompatActivity() {
                 KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
                 .setBlockModes(KeyProperties.BLOCK_MODE_CBC)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_PKCS7)
-                .setUserAuthenticationRequired(true)
+                .setUserAuthenticationRequired(false)
                 // Invalidate the keys if the user has registered a new biometric
                 // credential, such as a new fingerprint. Can call this method only
                 // on Android 7.0 (API level 24) or higher. The variable
                 // "invalidatedByBiometricEnrollment" is true by default.
-                .setInvalidatedByBiometricEnrollment(true)
+//                .setInvalidatedByBiometricEnrollment(true)
                 .build())
         }
         else{
@@ -98,9 +98,9 @@ class MainActivity : AppCompatActivity() {
         // For information on individual prompt options refer to:
         //https://developer.android.com/reference/android/hardware/biometrics/BiometricPrompt.Builder.html#public-methods
         promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Biometric Example")
-            .setDescription("Biometric login for my app")
-            .setSubtitle("Log in using your biometric credential")
+            .setTitle("Nik.re Login")
+            .setSubtitle("Biometric Auth")
+            .setDescription("Login using any biometric the device supports")
             .setNegativeButtonText("Abort biometric login")
             .setConfirmationRequired(true)
             .setDeviceCredentialAllowed(false)
