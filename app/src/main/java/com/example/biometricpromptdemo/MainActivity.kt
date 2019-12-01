@@ -2,6 +2,7 @@ package com.example.biometricpromptdemo
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.provider.Settings
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.widget.Button
@@ -14,10 +15,12 @@ import java.nio.charset.Charset
 
 //Crypto APIs
 import java.security.KeyStore
+import java.security.SecureRandom
 import java.util.concurrent.Executor
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
+import javax.crypto.spec.IvParameterSpec
 
 //Ref: https://developer.android.com/training/sign-in/biometric-auth#kotlin
 
@@ -33,6 +36,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var biometricPrompt: BiometricPrompt
     private lateinit var promptInfo: BiometricPrompt.PromptInfo
     private lateinit var biometricManager: BiometricManager
+
+
+    val superSecretValue = "SuperSecretValueShhh"
+    lateinit var encryptedSuperSecretValue: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,7 +63,7 @@ class MainActivity : AppCompatActivity() {
                 KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
                 .setBlockModes(KeyProperties.BLOCK_MODE_CBC)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_PKCS7)
-                .setUserAuthenticationRequired(true)
+                .setUserAuthenticationRequired(false)
                 // Invalidate the keys if the user has registered a new biometric
                 // credential, such as a new fingerprint. Can call this method only
                 // on Android 7.0 (API level 24) or higher. The variable
@@ -75,8 +82,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         mainButton.setOnClickListener {
-
-            println("[PRE AUTH] The old key ->" + getSecretKey().encoded)
 
             when (biometricManager.canAuthenticate()) {
                 BiometricManager.BIOMETRIC_SUCCESS ->
@@ -123,7 +128,7 @@ class MainActivity : AppCompatActivity() {
                 override fun onAuthenticationSucceeded(
                     result: BiometricPrompt.AuthenticationResult) {
                     val encryptedInfo: ByteArray? = result.cryptoObject?.cipher?.doFinal(
-                        "super_sensitive_string".toByteArray(Charset.defaultCharset())
+                        superSecretValue.toByteArray(Charset.defaultCharset())
                     )
 
                     println("[POST AUTH] Encrypted info: " + encryptedInfo)
@@ -145,9 +150,24 @@ class MainActivity : AppCompatActivity() {
     fun performBiometricAuthentication(){
         val cipher = getCipher()
         val secretKey = getSecretKey()
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey)
-        biometricPrompt.authenticate(promptInfo,
-            BiometricPrompt.CryptoObject(cipher))
+
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, cipher.parameters)
+
+        val encryptedData: ByteArray = cipher.doFinal(
+            superSecretValue.toByteArray(Charset.defaultCharset())
+        )
+
+        println("[PRE AUTH] pre encrypted daterino: " + superSecretValue)
+        println("[PRE AUTH] encrypted daterino: " + encryptedData)
+
+        val a = getCipher()
+        a.init(Cipher.DECRYPT_MODE,secretKey, cipher.parameters)
+        val decryptedData:ByteArray = a.doFinal(encryptedData)
+
+        println("[PRE AUTH] decrypted daterino: " + decryptedData.toString())
+
+//        biometricPrompt.authenticate(promptInfo,
+//            BiometricPrompt.CryptoObject(cipher))
     }
 
     fun notiftyUIAuthSuccess(){
