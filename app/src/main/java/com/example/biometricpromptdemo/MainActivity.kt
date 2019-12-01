@@ -14,10 +14,12 @@ import java.nio.charset.Charset
 
 //Crypto APIs
 import java.security.KeyStore
+import java.security.SecureRandom
 import java.util.concurrent.Executor
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
+import javax.crypto.spec.IvParameterSpec
 
 //Ref: https://developer.android.com/training/sign-in/biometric-auth#kotlin
 
@@ -25,6 +27,7 @@ class MainActivity : AppCompatActivity() {
 
     object irrelevantVars{
         var counter = 0
+        var flag = 0
     }
 
     val KEY_NAME = "dummy"
@@ -34,9 +37,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var promptInfo: BiometricPrompt.PromptInfo
     private lateinit var biometricManager: BiometricManager
 
-
     val superSecretValue = "SuperSecretValueShhh"
     lateinit var encryptedSuperSecretValue: ByteArray
+    lateinit var iv: ByteArray
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,7 +64,7 @@ class MainActivity : AppCompatActivity() {
                 KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
                 .setBlockModes(KeyProperties.BLOCK_MODE_CBC)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_PKCS7)
-                .setUserAuthenticationRequired(false)
+                .setUserAuthenticationRequired(true)
                 // Invalidate the keys if the user has registered a new biometric
                 // credential, such as a new fingerprint. Can call this method only
                 // on Android 7.0 (API level 24) or higher. The variable
@@ -81,13 +84,22 @@ class MainActivity : AppCompatActivity() {
         }
 
         encryptButton.setOnClickListener {
-            println("ENCRYPTING - canary")
+            when (biometricManager.canAuthenticate()) {
+                BiometricManager.BIOMETRIC_SUCCESS ->
+                    performBiometricAuthenticationEncrypt()
+                BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE ->
+                    println("No biometric features available on this device.")
+                BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE ->
+                    println("Biometric features are currently unavailable.")
+                BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED ->
+                    println("The user hasn't associated any biometrics with their account.")
+            }
         }
 
         decryptButton.setOnClickListener {
             when (biometricManager.canAuthenticate()) {
                 BiometricManager.BIOMETRIC_SUCCESS ->
-                    performBiometricAuthentication()
+                    performBiometricAuthenticationDecrypt()
                 BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE ->
                     println("No biometric features available on this device.")
                 BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE ->
@@ -129,22 +141,33 @@ class MainActivity : AppCompatActivity() {
 
                 override fun onAuthenticationSucceeded(
                     result: BiometricPrompt.AuthenticationResult) {
-//                    val encryptedInfo: ByteArray? = result.cryptoObject?.cipher?.doFinal(
-//                        superSecretValue.toByteArray(Charset.defaultCharset())
-//                    )
-
-                    val authenticatedCryptoObject: BiometricPrompt.CryptoObject? =
-                        result.cryptoObject
 
 
-                    val decryptedData = authenticatedCryptoObject?.cipher?.doFinal(
-                        encryptedSuperSecretValue
-                    )
+                    if (irrelevantVars.flag == 0){
 
-                    println("[POST AUTH] Decrypted info: " +
-                            decryptedData?.toString(Charset.defaultCharset()))
+                        encryptedSuperSecretValue = result.cryptoObject?.cipher?.doFinal(
+                            superSecretValue.toByteArray(Charset.defaultCharset())
+                        )!!
 
-                    notiftyUIAuthSuccess()
+                        println("[POST AUTH] Encrypted Data: " +
+                                encryptedSuperSecretValue.toString(Charset.defaultCharset()))
+
+                        notiftyUIAuthSuccess()
+                    }
+
+
+                    if (irrelevantVars.flag == 1) {
+
+                        val decryptedData = result.cryptoObject?.cipher?.doFinal(
+                            encryptedSuperSecretValue
+                        )
+
+                        println("[POST AUTH] Decrypted info: " +
+                                decryptedData?.toString(Charset.defaultCharset()))
+
+                        notiftyUIAuthSuccess()
+                    }
+
                 }
 
                 override fun onAuthenticationFailed() {
@@ -158,27 +181,37 @@ class MainActivity : AppCompatActivity() {
             })
     }
 
-    fun performBiometricAuthentication(){
+    fun performBiometricAuthenticationEncrypt(){
         val cipher = getCipher()
         val secretKey = getSecretKey()
 
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey, cipher.parameters)
-        encryptedSuperSecretValue = cipher.doFinal(
-            superSecretValue.toByteArray(Charset.defaultCharset())
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, SecureRandom())
+
+        iv = cipher.iv
+
+        biometricPrompt.authenticate(promptInfo,
+            BiometricPrompt.CryptoObject(cipher)
         )
 
-        println("[PRE AUTH] Original Data: " + superSecretValue)
-        println("[PRE AUTH] Encrypted Data: " + encryptedSuperSecretValue)
+        irrelevantVars.flag = 0
+    }
 
-
-//      Decryption logic for verification
+    fun performBiometricAuthenticationDecrypt(){
         val decryptionCipher = getCipher()
-        decryptionCipher.init(Cipher.DECRYPT_MODE,secretKey, cipher.parameters)
-        val decryptedData:ByteArray = decryptionCipher.doFinal(encryptedSuperSecretValue)
-        println("[PRE AUTH] Decrypted Data: " + decryptedData.toString(Charset.defaultCharset()))
+        val decryptionSecretKey = getSecretKey()
+
+        decryptionCipher.init(Cipher.DECRYPT_MODE, decryptionSecretKey, IvParameterSpec(iv))
+
+//        Testing purposes, checking if this will trigger an error when accessing key without
+//              the user authenticating. Correctly throws the following exception:
+//              android.security.KeyStoreException: Key user not authenticated
+//        val decryptedData:ByteArray = decryptionCipher.doFinal(encryptedSuperSecretValue)
+//        println("[PRE AUTH] Decrypted Data: " + decryptedData.toString(Charset.defaultCharset()))
 
         biometricPrompt.authenticate(promptInfo,
             BiometricPrompt.CryptoObject(decryptionCipher))
+
+        irrelevantVars.flag = 1
     }
 
     fun notiftyUIAuthSuccess(){
