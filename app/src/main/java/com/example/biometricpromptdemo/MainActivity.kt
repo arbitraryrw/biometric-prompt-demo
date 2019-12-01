@@ -43,7 +43,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         val authResultTextView = findViewById<TextView>(R.id.authResultTextView)
-        val mainButton = findViewById<Button>(R.id.mainButton)
+        val encryptButton = findViewById<Button>(R.id.encryptButton)
+        val decryptButton = findViewById<Button>(R.id.decryptButton)
 
         authResultTextView.setText("Not Authenticated")
 
@@ -65,7 +66,8 @@ class MainActivity : AppCompatActivity() {
                 // credential, such as a new fingerprint. Can call this method only
                 // on Android 7.0 (API level 24) or higher. The variable
                 // "invalidatedByBiometricEnrollment" is true by default.
-//                .setInvalidatedByBiometricEnrollment(true)
+                .setInvalidatedByBiometricEnrollment(true)
+                //.setUserAuthenticationValidityDurationSeconds()
                 .build())
         }
         else{
@@ -78,8 +80,11 @@ class MainActivity : AppCompatActivity() {
                 .build())
         }
 
-        mainButton.setOnClickListener {
+        encryptButton.setOnClickListener {
+            println("ENCRYPTING - canary")
+        }
 
+        decryptButton.setOnClickListener {
             when (biometricManager.canAuthenticate()) {
                 BiometricManager.BIOMETRIC_SUCCESS ->
                     performBiometricAuthentication()
