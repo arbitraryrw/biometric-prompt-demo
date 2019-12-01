@@ -21,30 +21,33 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.IvParameterSpec
 
-//Many of the code snippets are inspired from here:
-//Ref: https://developer.android.com/training/sign-in/biometric-auth#kotlin
-
 class MainActivity : AppCompatActivity() {
 
-    object irrelevantVars{
-        var counter = 0
-        var flag = 0
+    object reference{
+        var androidGuide = "https://developer.android.com/training/sign-in/biometric-auth#kotlin"
     }
 
     val KEY_NAME = "insert_obfuscated_keyname"
 
     private lateinit var executor:Executor
-    private lateinit var biometricPrompt: BiometricPrompt
-    private lateinit var promptInfo: BiometricPrompt.PromptInfo
     private lateinit var biometricManager: BiometricManager
 
-    val superSecretValue = "SuperSecretValueShhh"
+    private lateinit var encryptBiometricPrompt: BiometricPrompt
+    private lateinit var encryptBiometricPromptInfo: BiometricPrompt.PromptInfo
+
+    private lateinit var decryptBiometricPrompt: BiometricPrompt
+    private lateinit var decryptBiometricPromptInfo: BiometricPrompt.PromptInfo
+
+    val superSecretValue = "Sup3rSecr3tValueShh"
     lateinit var encryptedSuperSecretValue: ByteArray
     lateinit var iv: ByteArray
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        println("[+] Detailed guide can be found here: " + reference.androidGuide)
 
         val authResultTextView = findViewById<TextView>(R.id.authResultTextView)
         val encryptButton = findViewById<Button>(R.id.encryptButton)
@@ -52,10 +55,10 @@ class MainActivity : AppCompatActivity() {
 
         authResultTextView.setText("Not Authenticated")
 
-
         executor = ContextCompat.getMainExecutor(this)
 
-        setupBiometricPromptAndInfo()
+        setupEncryptBiometricPromptAndInfo()
+        setupDecryptBiometricPromptAndInfo()
 
         biometricManager = BiometricManager.from(this)
 
@@ -112,19 +115,19 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    fun setupBiometricPromptAndInfo() {
+    fun setupEncryptBiometricPromptAndInfo() {
         // For information on individual prompt options refer to:
         //https://developer.android.com/reference/android/hardware/biometrics/BiometricPrompt.Builder.html#public-methods
-        promptInfo = BiometricPrompt.PromptInfo.Builder()
+        encryptBiometricPromptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle("Nik.re Login")
             .setSubtitle("Biometric Auth")
-            .setDescription("Login using any biometric the device supports")
+            .setDescription("Accessing key stored in keystore for encryption")
             .setNegativeButtonText("Abort biometric login")
             .setConfirmationRequired(true)
             .setDeviceCredentialAllowed(false)
             .build()
 
-        biometricPrompt = BiometricPrompt(this, executor,
+        encryptBiometricPrompt = BiometricPrompt(this, executor,
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationError(errorCode: Int,
                                                    errString: CharSequence) {
@@ -136,39 +139,76 @@ class MainActivity : AppCompatActivity() {
                     if (errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON){
                         println("Error: negative button pressed.")
                     }
-
                     println("AUTH ERROR")
                 }
 
                 override fun onAuthenticationSucceeded(
                     result: BiometricPrompt.AuthenticationResult) {
+                    val authResultTextView = findViewById<TextView>(
+                        R.id.authResultTextView)
 
+                    encryptedSuperSecretValue = result.cryptoObject?.cipher?.doFinal(
+                        superSecretValue.toByteArray(Charset.defaultCharset()))!!
 
-                    if (irrelevantVars.flag == 0){
+                    var uiResultData = "Encrypt: " + encryptedSuperSecretValue.toString(Charset.defaultCharset())
 
-                        encryptedSuperSecretValue = result.cryptoObject?.cipher?.doFinal(
-                            superSecretValue.toByteArray(Charset.defaultCharset())
-                        )!!
+                    authResultTextView.setText(uiResultData)
 
-                        println("[POST AUTH] Encrypted Data: " +
-                                encryptedSuperSecretValue.toString(Charset.defaultCharset()))
+                    Toast.makeText(applicationContext, "Authentication Success - Encrypting!",
+                        Toast.LENGTH_SHORT)
+                        .show()
+                }
 
-                        notiftyUIAuthSuccess()
+                override fun onAuthenticationFailed() {
+                    super.onAuthenticationFailed()
+                    Toast.makeText(applicationContext, "Authentication failed",
+                        Toast.LENGTH_SHORT)
+                        .show()
+
+                    println("Biometric auth failed")
+                }
+            })
+    }
+
+    fun setupDecryptBiometricPromptAndInfo(){
+        decryptBiometricPromptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle("Nik.re Login")
+            .setSubtitle("Biometric Auth")
+            .setDescription("Accessing key stored in keystore for decryption")
+            .setNegativeButtonText("Abort biometric login")
+            .setConfirmationRequired(true)
+            .setDeviceCredentialAllowed(false)
+            .build()
+
+        decryptBiometricPrompt = BiometricPrompt(this, executor,
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationError(errorCode: Int,
+                                                   errString: CharSequence) {
+                    super.onAuthenticationError(errorCode, errString)
+                    Toast.makeText(applicationContext,
+                        "Authentication error: $errString", Toast.LENGTH_SHORT)
+                        .show()
+
+                    if (errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON){
+                        println("Error: negative button pressed.")
                     }
+                    println("AUTH ERROR")
+                }
 
+                override fun onAuthenticationSucceeded(
+                    result: BiometricPrompt.AuthenticationResult) {
+                    val authResultTextView = findViewById<TextView>(
+                        R.id.authResultTextView)
 
-                    if (irrelevantVars.flag == 1) {
+                    val decryptedData = result.cryptoObject?.cipher?.doFinal(
+                        encryptedSuperSecretValue)!!
+                    var uiResultData = "Decrypt: " + decryptedData?.toString(Charset.defaultCharset())
 
-                        val decryptedData = result.cryptoObject?.cipher?.doFinal(
-                            encryptedSuperSecretValue
-                        )
+                    authResultTextView.setText(uiResultData)
 
-                        println("[POST AUTH] Decrypted info: " +
-                                decryptedData?.toString(Charset.defaultCharset()))
-
-                        notiftyUIAuthSuccess()
-                    }
-
+                    Toast.makeText(applicationContext, "Authentication Success - Decrypting!",
+                        Toast.LENGTH_SHORT)
+                        .show()
                 }
 
                 override fun onAuthenticationFailed() {
@@ -187,14 +227,11 @@ class MainActivity : AppCompatActivity() {
         val secretKey = getSecretKey()
 
         cipher.init(Cipher.ENCRYPT_MODE, secretKey, SecureRandom())
-
         iv = cipher.iv
 
-        biometricPrompt.authenticate(promptInfo,
+        encryptBiometricPrompt.authenticate(encryptBiometricPromptInfo,
             BiometricPrompt.CryptoObject(cipher)
         )
-
-        irrelevantVars.flag = 0
     }
 
     fun performBiometricAuthenticationDecrypt(){
@@ -209,20 +246,8 @@ class MainActivity : AppCompatActivity() {
 //        val decryptedData:ByteArray = decryptionCipher.doFinal(encryptedSuperSecretValue)
 //        println("[PRE AUTH] Decrypted Data: " + decryptedData.toString(Charset.defaultCharset()))
 
-        biometricPrompt.authenticate(promptInfo,
+        decryptBiometricPrompt.authenticate(decryptBiometricPromptInfo,
             BiometricPrompt.CryptoObject(decryptionCipher))
-
-        irrelevantVars.flag = 1
-    }
-
-    fun notiftyUIAuthSuccess(){
-        val authResultTextView = findViewById<TextView>(R.id.authResultTextView)
-
-        println("[+] Successful authentication, yahoo!")
-
-        irrelevantVars.counter++
-
-        authResultTextView.setText("Successfully Authenticated:" + irrelevantVars.counter)
     }
 
     private fun generateSecretKey(keyGenParameterSpec: KeyGenParameterSpec) {
@@ -245,6 +270,5 @@ class MainActivity : AppCompatActivity() {
                 + KeyProperties.BLOCK_MODE_CBC + "/"
                 + KeyProperties.ENCRYPTION_PADDING_PKCS7)
     }
-
 
 }
