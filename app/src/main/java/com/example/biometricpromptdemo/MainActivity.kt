@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity() {
 
 
     val superSecretValue = "SuperSecretValueShhh"
-    lateinit var encryptedSuperSecretValue: String
+    lateinit var encryptedSuperSecretValue: ByteArray
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -127,11 +127,20 @@ class MainActivity : AppCompatActivity() {
 
                 override fun onAuthenticationSucceeded(
                     result: BiometricPrompt.AuthenticationResult) {
-                    val encryptedInfo: ByteArray? = result.cryptoObject?.cipher?.doFinal(
-                        superSecretValue.toByteArray(Charset.defaultCharset())
+//                    val encryptedInfo: ByteArray? = result.cryptoObject?.cipher?.doFinal(
+//                        superSecretValue.toByteArray(Charset.defaultCharset())
+//                    )
+
+                    val authenticatedCryptoObject: BiometricPrompt.CryptoObject? =
+                        result.cryptoObject
+
+
+                    val decryptedData = authenticatedCryptoObject?.cipher?.doFinal(
+                        encryptedSuperSecretValue
                     )
 
-                    println("[POST AUTH] Encrypted info: " + encryptedInfo)
+                    println("[POST AUTH] Decrypted info: " +
+                            decryptedData?.toString(Charset.defaultCharset()))
 
                     notiftyUIAuthSuccess()
                 }
@@ -152,22 +161,22 @@ class MainActivity : AppCompatActivity() {
         val secretKey = getSecretKey()
 
         cipher.init(Cipher.ENCRYPT_MODE, secretKey, cipher.parameters)
-
-        val encryptedData: ByteArray = cipher.doFinal(
+        encryptedSuperSecretValue = cipher.doFinal(
             superSecretValue.toByteArray(Charset.defaultCharset())
         )
 
-        println("[PRE AUTH] pre encrypted daterino: " + superSecretValue)
-        println("[PRE AUTH] encrypted daterino: " + encryptedData)
+        println("[PRE AUTH] Original Data: " + superSecretValue)
+        println("[PRE AUTH] Encrypted Data: " + encryptedSuperSecretValue)
 
-        val a = getCipher()
-        a.init(Cipher.DECRYPT_MODE,secretKey, cipher.parameters)
-        val decryptedData:ByteArray = a.doFinal(encryptedData)
 
-        println("[PRE AUTH] decrypted daterino: " + decryptedData.toString())
+//      Decryption logic for verification
+        val decryptionCipher = getCipher()
+        decryptionCipher.init(Cipher.DECRYPT_MODE,secretKey, cipher.parameters)
+        val decryptedData:ByteArray = decryptionCipher.doFinal(encryptedSuperSecretValue)
+        println("[PRE AUTH] Decrypted Data: " + decryptedData.toString(Charset.defaultCharset()))
 
-//        biometricPrompt.authenticate(promptInfo,
-//            BiometricPrompt.CryptoObject(cipher))
+        biometricPrompt.authenticate(promptInfo,
+            BiometricPrompt.CryptoObject(decryptionCipher))
     }
 
     fun notiftyUIAuthSuccess(){
